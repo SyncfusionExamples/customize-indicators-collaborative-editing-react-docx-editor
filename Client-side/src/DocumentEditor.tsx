@@ -597,7 +597,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
                   User name
                 </label>
                 <p className="user-picker-hint">
-                  Only users from the server list can join. Start typing to pick your name from the list.
+                  Search your name in the organization to join the session.
                 </p>
 
                 {/* Autocomplete combobox */}
@@ -606,7 +606,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
                     id="userNameInput"
                     type="text"
                     className="e-input user-combobox-input"
-                    placeholder="Pick a listed user…"
+                    placeholder="Select a user or type a name…"
                     value={userName}
                     onChange={this.onUserNameChange}
                     onFocus={this.onUserNameFocus}
