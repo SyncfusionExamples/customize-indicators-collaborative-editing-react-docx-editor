@@ -26,7 +26,6 @@ import { TitleBar } from './title-bar.ts';
 import { dataService } from './data-service.ts';
 import type { UserProfile } from './user-types.ts';
 import { fetchUserDirectory, findProfileByName } from './user-service.ts';
-import { roleColor as computeRoleColor } from './user-types.ts';
 
 DocumentEditor.Inject(CollaborativeEditingHandler);
 
@@ -250,22 +249,6 @@ class Editor extends React.Component<EditorProps, EditorState> {
       this.onOkClick();
     }
   };
-
-  /** First-letter initials for a name (used for fallback avatar text). */
-  private constructInitial = (name: string): string => {
-    const parts = (name || '').trim().split(/\s+/);
-    let initials = '';
-    for (const p of parts) {
-      if (p && p.length > 0) initials += p[0];
-      if (initials.length >= 2) break;
-    }
-    return initials.toUpperCase() || '?';
-  };
-
-  /** Returns a CSS color for the given user role. */
-  private roleColor(role: string | undefined | null): string {
-    return computeRoleColor(role);
-  }
 
   public componentDidMount(): void {
     window.onbeforeunload = () => 'Want to save your changes?';
@@ -573,7 +556,6 @@ class Editor extends React.Component<EditorProps, EditorState> {
       documentLoaded,
       userName,
       userDirectoryLoading,
-      selectedProfile,
       showPicker,
       highlightedIndex,
     } = this.state;
@@ -655,69 +637,14 @@ class Editor extends React.Component<EditorProps, EditorState> {
                             this.setState({ highlightedIndex: idx })
                           }
                         >
-                          {u.profileIcon ? (
-                            <img
-                              className="user-combobox-option-avatar"
-                              src={u.profileIcon}
-                              alt=""
-                            />
-                          ) : (
-                            <span className="user-combobox-option-avatar user-combobox-option-fallback">
-                              {this.constructInitial(u.name)}
-                            </span>
-                          )}
                           <span className="user-combobox-option-name">
                             {u.name}
-                          </span>
-                          <span
-                            className="user-combobox-option-role"
-                            style={{
-                              backgroundColor: this.roleColor(u.userRole),
-                            }}
-                          >
-                            {u.userRole || 'Viewer'}
                           </span>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
-
-                {/* Live preview of the picked profile (avatar + name + role) */}
-                {selectedProfile && (
-                  <div className="user-picker-preview">
-                    {selectedProfile.profileIcon ? (
-                      <img
-                        src={selectedProfile.profileIcon}
-                        alt=""
-                        className="user-picker-preview-icon"
-                      />
-                    ) : (
-                      <div className="user-picker-preview-icon user-picker-preview-fallback">
-                        {this.constructInitial(selectedProfile.name)}
-                      </div>
-                    )}
-                    <div className="user-picker-preview-text">
-                      <div className="user-picker-preview-name">
-                        {selectedProfile.name}
-                      </div>
-                      <div className="user-picker-preview-meta">
-                        <span className={`status-dot status-${selectedProfile.onlineStatus.toLowerCase()}`} />
-                        {selectedProfile.onlineStatus} · {selectedProfile.id}
-                      </div>
-                    </div>
-                    {selectedProfile.userRole && (
-                      <span
-                        className="user-picker-preview-role"
-                        style={{
-                          backgroundColor: this.roleColor(selectedProfile.userRole),
-                        }}
-                      >
-                        {selectedProfile.userRole}
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
               <div className="username-dialog-footer">
                 <button

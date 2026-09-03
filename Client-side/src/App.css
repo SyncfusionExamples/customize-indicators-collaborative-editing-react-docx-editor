@@ -357,59 +357,6 @@
   padding: 0 10px;
 }
 
-.user-picker-preview {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 10px 12px;
-  background: #f7f8fc;
-  border: 1px solid #e3e6f0;
-  border-radius: 6px;
-}
-
-.user-picker-preview-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #2B3481;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.user-picker-preview-fallback {
-  letter-spacing: 0.5px;
-}
-
-.user-picker-preview-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.user-picker-preview-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a1a2e;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-picker-preview-meta {
-  font-size: 12px;
-  color: #555;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 /* ── Online / offline status dot (shared) ──────────────────────── */
 .status-dot {
   display: inline-block;
@@ -642,56 +589,13 @@
   background: #eef0fb;
 }
 
-.user-combobox-option-avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  background: #2B3481;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.user-combobox-option-fallback {
-  letter-spacing: 0.25px;
-}
-
 .user-combobox-option-name {
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.user-combobox-option-role {
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  flex-shrink: 0;
-}
-
-/* ── Role chip (login preview + profile popup) ──────────────────── */
-.user-picker-preview-role {
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
+/* ── Role chip (profile popup) ───────────────────────────────────── */
 .udp-role-chip {
   display: inline-flex;
   align-items: center;
