@@ -154,7 +154,7 @@ export class TitleBar {
     if (this.documentTitle) this.documentTitle.textContent = 'Collaborative Editing';
   };
 
-  public addUser(actionInfos: ActionInfo | ActionInfo[]): void {
+public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
     const list = Array.isArray(actionInfos) ? actionInfos : [actionInfos];
     for (const actionInfo of list) {
       const connectionId = (actionInfo as any)?.connectionId as string;
@@ -188,7 +188,6 @@ export class TitleBar {
     this.refreshCollaborators();
     this.render();
   }
-
   public removeUser(connectionId: string): void {
     const entry = this.userMap[connectionId];
     if (!entry) return;

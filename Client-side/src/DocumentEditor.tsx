@@ -26,6 +26,7 @@ import { TitleBar } from './title-bar.ts';
 import { dataService } from './data-service.ts';
 import type { UserProfile } from './user-types.ts';
 import { fetchUserDirectory, findProfileByName } from './user-service.ts';
+import { roleColor as computeRoleColor } from './user-types.ts';
 
 DocumentEditor.Inject(CollaborativeEditingHandler);
 
@@ -274,6 +275,10 @@ class Editor extends React.Component<EditorProps, EditorState> {
         }
         return next as Pick<EditorState, keyof EditorState>;
       });
+      // Keep the title bar in sync with the freshly-fetched directory.
+      // This matters when the directory arrives after the title bar has
+      // already been constructed (it was given an empty list at first).
+      this.titleBar?.setUserDirectory(users);
     } catch (err) {
       // Non-fatal: the user can still type a custom name.
       this.setState({ userDirectoryLoading: false });
@@ -419,11 +424,23 @@ class Editor extends React.Component<EditorProps, EditorState> {
       this.connectionId = data;
     }
 
+    // The hub wraps `addUser` payloads in `{ actionInfo, ...profileFields }`
+    // so peers can render the avatar without a separate round-trip to the
+    // user directory. Unwrap to the original ActionInfo for the collab
+    // handler, and pass the *wrapper* to the title bar so it can read the
+    // profile fields directly.
+    let collabAction: any = data;
+    const isWrappedUserPayload =
+      (action === 'addUser' || action === 'action') &&
+      data && typeof data === 'object' &&
+      'actionInfo' in data;
+    if (isWrappedUserPayload) collabAction = data.actionInfo;
+
     // Update TitleBar only for messages from other users
-    if (this.connectionId && this.connectionId !== data?.connectionId) {
+    if (this.connectionId && this.connectionId !== collabAction?.connectionId) {
       if (this.titleBar) {
         if (action === 'action' || action === 'addUser') {
-          // The server forwards profile fields alongside the ActionInfo payload.
+          // Hub sends a wrapper or an array of wrappers — pass it through.
           this.titleBar.addUser(data);
         } else if (action === 'removeUser') {
           this.titleBar.removeUser(data);
@@ -431,8 +448,8 @@ class Editor extends React.Component<EditorProps, EditorState> {
       }
     }
 
-    // Always forward ALL actions
-    handler.applyRemoteAction(action, data);
+    // Always forward ALL actions to the collaborative-editing handler.
+    handler.applyRemoteAction(action, collabAction);
 
   };
 
