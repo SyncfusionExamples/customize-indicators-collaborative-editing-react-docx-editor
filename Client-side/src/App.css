@@ -277,7 +277,10 @@
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
   width: 360px;
   max-width: 95vw;
-  overflow: hidden;
+  /* 'visible' (not 'hidden') so the autocomplete dropdown that opens below
+     the input is not clipped by the dialog's bounds. Rounded corners are
+     preserved on the title bar itself instead. */
+  overflow: visible;
 }
 
 .username-dialog-title {
@@ -286,6 +289,9 @@
   font-size: 16px;
   font-weight: 500;
   padding: 14px 20px;
+  /* Match the parent's rounded top corners (needed now that the box
+     no longer clips its children with overflow:hidden). */
+  border-radius: 4px 4px 0 0;
 }
 
 .username-dialog-body {
@@ -610,7 +616,11 @@
   list-style: none;
   margin: 0;
   padding: 4px 0;
-  max-height: 260px;
+  /* Keep the dropdown inside the viewport on short screens. It can extend
+     beyond the dialog box (which now uses overflow:visible) but never past
+     the bottom of the window. min() = never taller than the space left
+     under the input; 260px = the previous fixed cap. */
+  max-height: min(260px, 45vh);
   overflow-y: auto;
   z-index: 10000;
 }
