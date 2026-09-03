@@ -149,6 +149,9 @@ The gear button opens the custom **Collaborator Display Settings** drawer.
 
 The settings are held in the `TemplateSettings` object in `title-bar.ts`.
 
+![Collaborator Indicator Settings in Syncfusion React DOCX Editor](/images/collaborator-indicators-display-settings-in-react-docx-editor.png)
+
+
 ## Title Bar Settings
 
 The following options can be enabled/disabled:
