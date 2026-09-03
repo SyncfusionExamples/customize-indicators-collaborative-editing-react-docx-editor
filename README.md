@@ -14,6 +14,9 @@ The custom title bar is the main UI enhancement in this sample. It combines:
 - A configurable user-display settings drawer.
 - Profile-photo or initials display.
 
+
+![Colloborator Indicator Customization in Syncfusion React DOCX Editor](/images/colloborator-indicators-in-react-docx-editor.png)
+
 The collaboration state is maintained in **Redis**, while **ASP.NET Core SignalR** distributes user presence and document operations to connected clients.
 
 ## Role-Based Avatar Rings
