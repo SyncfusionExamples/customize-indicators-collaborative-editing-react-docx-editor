@@ -1,4 +1,4 @@
-# Real-Time Collaborative Editing and Colloborator Indicator Customization in React DOCX Editor
+# Real-Time Collaborative Editing and Collaborator Indicator Customization in React DOCX Editor
 
 This repository contains an example of how to perform real-time collaborative editing on Word documents using the [Syncfusion® React DOCX Editor](https://www.syncfusion.com/docx-editor-sdk/react-docx-editor?utm_source=github&utm_medium=listing&utm_campaign=github-github-documenteditor-examples) (Document Editor). It showcases how multiple users can open the same DOCX file, join a shared collaboration session, and edit the document together in real time directly within the browser.
 
@@ -15,7 +15,7 @@ The custom title bar is the main UI enhancement in this sample. It combines:
 - Profile-photo or initials display.
 
 
-![Colloborator Indicator Customization in Syncfusion React DOCX Editor](/images/colloborator-indicators-in-react-docx-editor.png)
+![Collaborator Indicator Customization in Syncfusion React DOCX Editor](/images/collaborator-indicators-in-react-docx-editor.png)
 
 The collaboration state is maintained in **Redis**, while **ASP.NET Core SignalR** distributes user presence and document operations to connected clients.
 
