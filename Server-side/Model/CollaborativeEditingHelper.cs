@@ -153,6 +153,16 @@ namespace CollaborativeEditingServerSide.Model
 
             -- Return both lists as a combined result
             return {processingValues, listValues}";
+
+        public static string GetRedisRoomKey(string listKey)
+        {
+            return $"{{{listKey}}}";
+        }
+
+        public static string GetRedisRoomKey(string listKey, string suffix)
+        {
+            return $"{{{listKey}}}{suffix}";
+        }
     }
 
     public class SaveInfo

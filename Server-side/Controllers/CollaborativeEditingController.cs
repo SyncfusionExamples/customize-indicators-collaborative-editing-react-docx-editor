@@ -3,21 +3,17 @@ using Syncfusion.EJ2.DocumentEditor;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.SignalR;
 using CollaborativeEditingServerSide.Hubs;
-using System.Data;
-using Microsoft.CodeAnalysis;
 using StackExchange.Redis;
 using Newtonsoft.Json;
-using Azure.Storage.Blobs;
 using CollaborativeEditingServerSide.Model;
 using CollaborativeEditingServerSide.Service;
-using Azure.Storage.Blobs.Specialized;
 
 namespace CollaborativeEditingServerSide.Controllers
 {
     /// <summary>
     /// API Controller for handling real-time collaborative editing requests,
     /// such as importing files, updating actions, retrieving actions, and
-    /// loading/saving documents from Azure Blob storage.
+    /// loading/saving documents from the application's wwwroot folder.
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
@@ -25,14 +21,8 @@ namespace CollaborativeEditingServerSide.Controllers
     {
         private IBackgroundTaskQueue saveTaskQueue;
         private static IConnectionMultiplexer? _redisConnection;
-        private readonly IWebHostEnvironment _hostingEnvironment;
+        private static IWebHostEnvironment? _hostingEnvironment;
         private readonly IHubContext<DocumentEditorHub> _hubContext;
-        // Azure Blob storage connection string, used to create BlobServiceClient instances.
-        private static string? _storageConnectionString;
-        // The Azure Blob container name where documents are stored.
-        private static string? _containerName;
-        // The root folder name in the container (e.g., "Files") for organizing documents.
-        private static string? _rootFolderName;
 
         // Constructor for the CollaborativeEditingController
         public CollaborativeEditingController(IWebHostEnvironment hostingEnvironment,
@@ -42,14 +32,11 @@ namespace CollaborativeEditingServerSide.Controllers
             _hostingEnvironment = hostingEnvironment;
             _hubContext = hubContext;
             _redisConnection = redisConnection;
-            _storageConnectionString = config["connectionString"];
-            _containerName = config["containerName"];
-            _rootFolderName = "Files";
             saveTaskQueue = taskQueue;
         }
 
         /// <summary>
-        /// Imports a document from Azure Blob storage and applies any pending actions
+        /// Imports a document from the application's wwwroot folder and applies any pending actions
         /// from Redis to bring it up to date. Returns the final document in SFDT format.
         /// </summary>
         /// <param name="param">File info, including fileName and documentOwner (room ID).</param>
@@ -63,8 +50,8 @@ namespace CollaborativeEditingServerSide.Controllers
             {
                 // Prepare a container for returning document data
                 DocumentContent content = new DocumentContent();
-                // Retrieve the source document from Azure
-                Syncfusion.EJ2.DocumentEditor.WordDocument document = await GetSourceDocumentFromAzureAsync(param.fileName!);
+                // Retrieve the source document from wwwroot
+                Syncfusion.EJ2.DocumentEditor.WordDocument document = await GetSourceDocumentAsync(param.fileName!);
                 // Get any pending actions for this document/room
                 List<ActionInfo> actions = await GetPendingOperations(param.documentOwner!, 0, -1);
                 if (actions != null && actions.Count > 0)
@@ -81,10 +68,11 @@ namespace CollaborativeEditingServerSide.Controllers
                 // Return the serialized content as a JSON string
                 return Newtonsoft.Json.JsonConvert.SerializeObject(content);
             }
-            catch
+            catch (Exception ex)
             {
-                // Return null on failure
-                return null;
+                Console.WriteLine("Failed to import document '{FileName} - '"+ param.fileName);
+                Console.WriteLine(ex);
+                throw;
             }
         }
 
@@ -149,7 +137,13 @@ namespace CollaborativeEditingServerSide.Controllers
             // Initialize the database connection
             IDatabase database = _redisConnection!.GetDatabase();
             // Define the keys for Redis operations based on the action's room name
-            RedisKey[] keys = new RedisKey[] { action.RoomName + CollaborativeEditingHelper.VersionInfoSuffix, action.RoomName, action.RoomName + CollaborativeEditingHelper.RevisionInfoSuffix, action.RoomName + CollaborativeEditingHelper.ActionsToRemoveSuffix };
+            RedisKey[] keys = new RedisKey[]
+            {
+                CollaborativeEditingHelper.GetRedisRoomKey(action.RoomName, CollaborativeEditingHelper.VersionInfoSuffix),
+                CollaborativeEditingHelper.GetRedisRoomKey(action.RoomName),
+                CollaborativeEditingHelper.GetRedisRoomKey(action.RoomName, CollaborativeEditingHelper.RevisionInfoSuffix),
+                CollaborativeEditingHelper.GetRedisRoomKey(action.RoomName, CollaborativeEditingHelper.ActionsToRemoveSuffix)
+            };
             // Serialize the action and prepare values for the Redis script
             RedisValue[] values = new RedisValue[] { JsonConvert.SerializeObject(action), clientVersion.ToString(), CollaborativeEditingHelper.SaveThreshold.ToString() };
             // Execute the Lua script in Redis and store the results
@@ -207,8 +201,8 @@ namespace CollaborativeEditingServerSide.Controllers
             // Prepare Redis keys for accessing the room and its revision information
             RedisKey[] keys = new RedisKey[]
             {
-                action.RoomName, // Key for the room's main data
-                action.RoomName + CollaborativeEditingHelper.RevisionInfoSuffix // Key for the room's revision data
+                CollaborativeEditingHelper.GetRedisRoomKey(action.RoomName), // Key for the room's main data
+                CollaborativeEditingHelper.GetRedisRoomKey(action.RoomName, CollaborativeEditingHelper.RevisionInfoSuffix) // Key for the room's revision data
             };
 
             // Prepare Redis values for the script execution
@@ -231,8 +225,8 @@ namespace CollaborativeEditingServerSide.Controllers
             // Define Redis keys for accessing the room data and its revision information
             RedisKey[] keys = new RedisKey[]
             {
-                roomName, // Key for the room's actions
-                roomName + CollaborativeEditingHelper.RevisionInfoSuffix // Key for the room's revision data
+                CollaborativeEditingHelper.GetRedisRoomKey(roomName), // Key for the room's actions
+                CollaborativeEditingHelper.GetRedisRoomKey(roomName, CollaborativeEditingHelper.RevisionInfoSuffix) // Key for the room's revision data
             };
 
             // Prepare Redis values for the script: start index and save threshold
@@ -258,7 +252,8 @@ namespace CollaborativeEditingServerSide.Controllers
         {
             // Get the database connection from the Redis connection multiplexer
             var db = _redisConnection!.GetDatabase();
-            var result = (RedisResult[])(await db.ScriptEvaluateAsync(CollaborativeEditingHelper.PendingOperations, new RedisKey[] { listKey, listKey + CollaborativeEditingHelper.ActionsToRemoveSuffix }, new RedisValue[] { startIndex, endIndex }))!;
+            // var result = (RedisResult[])(await db.ScriptEvaluateAsync(CollaborativeEditingHelper.PendingOperations, new RedisKey[] { listKey, listKey + CollaborativeEditingHelper.ActionsToRemoveSuffix }, new RedisValue[] { startIndex, endIndex }))!;
+            var result = (RedisResult[])(await db.ScriptEvaluateAsync(CollaborativeEditingHelper.PendingOperations, new RedisKey[] { CollaborativeEditingHelper.GetRedisRoomKey(listKey), CollaborativeEditingHelper.GetRedisRoomKey(listKey, CollaborativeEditingHelper.ActionsToRemoveSuffix) }, new RedisValue[] { startIndex, endIndex }))!;
             var processingValues = (RedisResult[])result[0]!;
             var listValues = (RedisResult[])result[1]!;
 
@@ -274,19 +269,23 @@ namespace CollaborativeEditingServerSide.Controllers
             return actionInfoList;
         }
 
-        internal static async Task<Syncfusion.EJ2.DocumentEditor.WordDocument> GetSourceDocumentFromAzureAsync(string documentName)
+        internal static async Task<Syncfusion.EJ2.DocumentEditor.WordDocument> GetSourceDocumentAsync(string documentName)
         {
-            // Build the blob path for the document.
-            var blobPath = GenerateDocumentBlobPath(documentName);
+            // Resolve the document path under the application's wwwroot folder.
+            var wwwrootPath = ResolveWwwRootPath();
 
-            // Get a reference to the blob client for the specified document.
-            var blobClient = CreateBlobClient(blobPath);
+            var documentPath = Path.Combine(wwwrootPath, documentName);
+            if (!System.IO.File.Exists(documentPath))
+            {
+                throw new FileNotFoundException($"Document '{documentName}' was not found in wwwroot.", documentPath);
+            }
 
-            // Download the blob content into a memory stream.
+            // Load the document from disk into a memory stream.
             MemoryStream stream = new MemoryStream();
-            await blobClient.DownloadToAsync(stream);
-
-            // Reset the stream's position to the beginning.
+            await using (var fileStream = new FileStream(documentPath, FileMode.Open, FileAccess.Read))
+            {
+                await fileStream.CopyToAsync(stream);
+            }
             stream.Position = 0;
 
             // Determine the file format from the extension.
@@ -298,6 +297,30 @@ namespace CollaborativeEditingServerSide.Controllers
 
             stream.Dispose();
             return document;
+        }
+
+        /// <summary>
+        /// Resolves the absolute path to the application's wwwroot folder.
+        /// Tries the injected <see cref="IWebHostEnvironment"/> first, then falls back
+        /// to a relative lookup next to the assembly (used by the background service
+        /// which does not have access to the host environment).
+        /// </summary>
+        private static string ResolveWwwRootPath()
+        {
+            if (_hostingEnvironment != null && !string.IsNullOrEmpty(_hostingEnvironment.WebRootPath))
+            {
+                return _hostingEnvironment.WebRootPath!;
+            }
+
+            var contentRoot = AppContext.BaseDirectory;
+            var wwwrootPath = Path.Combine(contentRoot, "wwwroot");
+            if (!Directory.Exists(wwwrootPath))
+            {
+                // Fall back to the project-level wwwroot when running from the bin folder.
+                var candidate = Path.Combine(contentRoot, "..", "..", "..", "wwwroot");
+                wwwrootPath = Path.GetFullPath(candidate);
+            }
+            return wwwrootPath;
         }
 
         // Determines the format type of the document based on its file extension
@@ -326,25 +349,6 @@ namespace CollaborativeEditingServerSide.Controllers
                 default:
                     throw new NotSupportedException("EJ2 DocumentEditor does not support this file format.");
             }
-        }
-
-        /// <summary>
-        /// Generates the full blob path by combining the document name with the base file path
-        /// </summary>
-        /// <param name="documentName">Name of the target document</param>
-        /// <returns>Full blob path in format 'RootFolderName/{documentName}'</returns>
-        private static string GenerateDocumentBlobPath(string documentName) => $"{_rootFolderName}/{documentName}";
-
-        /// <summary>
-        /// Creates and returns a BlockBlobClient for interacting with a specific blob
-        /// </summary>
-        /// <param name="blobPath">The full path to the blob within the container</param>
-        /// <returns>Configured BlockBlobClient instance</returns>
-        private static BlockBlobClient CreateBlobClient(string blobPath)
-        {
-            var serviceClient = new BlobServiceClient(_storageConnectionString);
-            var containerClient = serviceClient.GetBlobContainerClient(_containerName);
-            return containerClient.GetBlockBlobClient(blobPath);
         }
     }
 }

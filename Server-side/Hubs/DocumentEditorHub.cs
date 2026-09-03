@@ -10,13 +10,17 @@ namespace CollaborativeEditingServerSide.Hubs
     public class DocumentEditorHub : Hub
     {
         private readonly IDatabase _db;
+        private readonly UserDirectoryService _userDirectory;
         private IBackgroundTaskQueue saveTaskQueue;
 
-        // Constructor for the DocumentEditorHub
-        public DocumentEditorHub(IConnectionMultiplexer redisConnection, IBackgroundTaskQueue taskQueue)
+        public DocumentEditorHub(
+            IConnectionMultiplexer redisConnection,
+            IBackgroundTaskQueue taskQueue,
+            UserDirectoryService userDirectory)
         {
             _db = redisConnection.GetDatabase();
             saveTaskQueue = taskQueue;
+            _userDirectory = userDirectory;
         }
 
         // Called when a new connection is established
@@ -35,6 +39,10 @@ namespace CollaborativeEditingServerSide.Hubs
             // Add the connection ID to the group
             await Groups.AddToGroupAsync(Context.ConnectionId, info.RoomName);
 
+            // Enrich the incoming ActionInfo with profile details from users.json.
+            // The user is, by definition, "Online" because they just joined.
+            EnrichWithProfile(info);
+
             //To ensure whether the room exixts in the Redis cache
             bool roomExists = await _db.KeyExistsAsync(info.RoomName + CollaborativeEditingHelper.UserInfoSuffix);
             if (roomExists)
@@ -43,11 +51,15 @@ namespace CollaborativeEditingServerSide.Hubs
                 var allUsers = await _db.HashGetAllAsync(info.RoomName + CollaborativeEditingHelper.UserInfoSuffix);
                 var userList = allUsers.Select(u => JsonConvert.DeserializeObject<ActionInfo>(u.Value!)).ToList();
 
-                //Send the exisiting user details to the newly joined user. 
+                // Enrich existing users with profile info. They are also
+                // currently online since they have an active presence record.
+                foreach (var u in userList) EnrichWithProfile(u);
+
+                //Send the exisiting user details to the newly joined user.
                 await Clients.Caller.SendAsync("dataReceived", "addUser", userList);
             }
 
-            // Add user to Redis           
+            // Add user to Redis
             await _db.HashSetAsync(info.RoomName + CollaborativeEditingHelper.UserInfoSuffix, Context.ConnectionId, JsonConvert.SerializeObject(info));
 
             // Store the room name with the connection ID
@@ -107,10 +119,49 @@ namespace CollaborativeEditingServerSide.Hubs
             }
             else
             {
-                // Notify remaining clients about the user disconnection              
+                // Notify remaining clients about the user disconnection
                 await Clients.Group(roomName!).SendAsync("dataReceived", "removeUser", Context.ConnectionId);
             }
             await base.OnDisconnectedAsync(e);
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // Profile enrichment
+        //
+        // Looks up the static profile (id, profileIcon) from users.json via
+        // the shared UserDirectoryService and *always* sets OnlineStatus to
+        // "Online" — anyone with an active session is, by definition, online.
+        // ─────────────────────────────────────────────────────────────────
+        private void EnrichWithProfile(ActionInfo info)
+        {
+            if (info == null) return;
+
+            var profile = _userDirectory.FindByName(info.CurrentUser);
+            if (profile != null)
+            {
+                TrySetProperty(info, "UserId", profile.Id);
+                TrySetProperty(info, "ProfileIcon", profile.ProfileIcon);
+                TrySetProperty(info, "UserRole", profile.UserRole);
+            }
+
+            // Active session participants are always "Online" — we do not
+            // maintain Online/Offline flags in users.json any more.
+            TrySetProperty(info, "OnlineStatus", "Online");
+        }
+
+        private static void TrySetProperty(object target, string propertyName, object? value)
+        {
+            if (value == null) return;
+            var prop = target.GetType().GetProperty(propertyName);
+            if (prop == null || !prop.CanWrite) return;
+            try
+            {
+                prop.SetValue(target, value);
+            }
+            catch
+            {
+                // Ignore — the property exists but its type didn't match.
+            }
         }
     }
 }

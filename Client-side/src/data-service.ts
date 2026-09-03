@@ -1,15 +1,12 @@
 
 export class DataService {
   private authorName: string;
-  private isAuthorOpened: boolean;
 
   private readonly AUTHOR_KEY = 'ce_authorName';
-  private readonly AUTHOR_OPENED_KEY = 'ce_isAuthorOpened';
 
   constructor() {
     // Restore from sessionStorage (if available)
     this.authorName = sessionStorage.getItem(this.AUTHOR_KEY) || '';
-    this.isAuthorOpened = sessionStorage.getItem(this.AUTHOR_OPENED_KEY) === 'true';
   }
 
   /** Store the name typed in the "Enter Your Name" dialog. */
@@ -21,20 +18,6 @@ export class DataService {
   /** Retrieve the stored author name. */
   getAuthorName(): string {
     return this.authorName;
-  }
-
-  /**
-   * Set true when the user opens a file from the File Manager.
-   * TitleBar uses this to decide whether to show the ← back arrow.
-   */
-  setIsAuthorOpened(isOpened: boolean): void {
-    this.isAuthorOpened = isOpened;
-    sessionStorage.setItem(this.AUTHOR_OPENED_KEY, String(isOpened));
-  }
-
-  /** Whether the current user initiated the session (vs joined via share link). */
-  getIsAuthorOpened(): boolean {
-    return this.isAuthorOpened;
   }
 
   /**
@@ -53,9 +36,7 @@ export class DataService {
   /** Optional helper: clear state (call on logout or app reset). */
   reset(): void {
     this.authorName = '';
-    this.isAuthorOpened = false;
     sessionStorage.removeItem(this.AUTHOR_KEY);
-    sessionStorage.removeItem(this.AUTHOR_OPENED_KEY);
   }
 }
 

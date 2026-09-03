@@ -1,0 +1,58 @@
+{
+  "users": [
+    {
+      "id": "U001",
+      "name": "Andy Bernard",
+      "initials": "AB",
+      "profileIcon": "/UserPictures/Andrew.png",
+      "email": "andy.bernard@adventureworks.com",
+      "organization": "Adventure Works",
+      "userRole": "Owner"
+    },
+    {
+      "id": "U002",
+      "name": "Andrew Fuller",
+      "initials": "AF",
+      "profileIcon": "/UserPictures/Davolio.png",
+      "email": "andrew.fuller@adventureworks.com",
+      "organization": "Adventure Works",
+      "userRole": "Editor"
+    },
+    {
+      "id": "U003",
+      "name": "Stanley Hudson",
+      "initials": "SH",
+      "profileIcon": "/UserPictures/Steven.png",
+      "email": "stanley.hudson@adventureworks.com",
+      "organization": "Adventure Works",
+      "userRole": "Reviewer"
+    },
+    {
+      "id": "U004",
+      "name": "Margaret Peacock",
+      "initials": "MP",
+      "profileIcon": "/UserPictures/Margaret.png",
+      "email": "margaret.peacock@adventureworks.com",
+      "organization": "Adventure Works",
+      "userRole": "Commenter"
+    },
+    {
+      "id": "U005",
+      "name": "Steven Buchanan",
+      "initials": "SB",
+      "profileIcon": "/UserPictures/Nancy.png",
+      "email": "steven.buchanan@adventureworks.com",
+      "organization": "Adventure Works",
+      "userRole": "Viewer"
+    },
+    {
+      "id": "U006",
+      "name": "Davolio Leverling",
+      "initials": "DL",
+      "profileIcon": "/UserPictures/Janet.png",
+      "email": "davolio.leverling@adventureworks.com",
+      "organization": "Adventure Works",
+      "userRole": "Viewer"
+    }
+  ]
+}
