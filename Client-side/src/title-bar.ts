@@ -151,7 +151,7 @@ export class TitleBar {
   }
 
   public updateDocumentTitle = (): void => {
-    if (this.documentTitle) this.documentTitle.textContent = 'Collaborative Editing';
+    if (this.documentTitle) this.documentTitle.textContent = 'Collaborative EditingCollaborative Editing in Syncfusion React DOCX Editor ';
   };
 
 public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
@@ -270,7 +270,7 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
       id: 'share-for-editing-button',
       className: 'btn-share-primary',
     }) as HTMLButtonElement;
-    shareBtn.textContent = 'Share for collaborative editing';
+    shareBtn.textContent = 'Share';
     shareBtn.addEventListener('click', () => this.openShareModal());
     right.appendChild(shareBtn);
 
