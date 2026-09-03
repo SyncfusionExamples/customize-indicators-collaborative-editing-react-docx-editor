@@ -26,7 +26,6 @@ import { TitleBar } from './title-bar.ts';
 import { dataService } from './data-service.ts';
 import type { UserProfile } from './user-types.ts';
 import { fetchUserDirectory, findProfileByName } from './user-service.ts';
-import { roleColor as computeRoleColor } from './user-types.ts';
 
 DocumentEditor.Inject(CollaborativeEditingHandler);
 
@@ -709,7 +708,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
               created={this.onCreated}
               contentChange={this.onContentChange}
               style={{ display: 'block' }}
-              height={'900px'}
+              height={'100%'}
               currentUser={this.currentUser}
               serviceUrl={this.serviceUrl + 'api/documenteditor'}
               toolbarMode="Ribbon"
