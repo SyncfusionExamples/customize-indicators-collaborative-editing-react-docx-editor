@@ -26,6 +26,7 @@ import { TitleBar } from './title-bar.ts';
 import { dataService } from './data-service.ts';
 import type { UserProfile } from './user-types.ts';
 import { fetchUserDirectory, findProfileByName } from './user-service.ts';
+import { SERVICE_URL } from './config.ts';
 
 DocumentEditor.Inject(CollaborativeEditingHandler);
 
@@ -67,7 +68,8 @@ interface EditorState {
 }
 
 class Editor extends React.Component<EditorProps, EditorState> {
-  public serviceUrl = 'http://localhost:5212/';
+  /** Backend base URL — change this in src/config.ts. */
+  public serviceUrl = SERVICE_URL;
 
   public container: DocumentEditorContainerComponent | null = null;
   public titleBar?: TitleBar;
