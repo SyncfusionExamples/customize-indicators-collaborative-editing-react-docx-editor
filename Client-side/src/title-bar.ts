@@ -20,8 +20,6 @@ interface AvatarEntry {
 interface TemplateSettings {
   showActiveCount: boolean;
   showRoleBreakdown: boolean;
-  showRoleBadge: boolean;
-  showStatusDot: boolean;
   enablePopup: boolean;
   iconStyle: 'photo' | 'initials';
   /** Per-field toggles for the avatar hover pop-up (mockup-driven). */
@@ -38,8 +36,6 @@ interface TemplateSettings {
 const DEFAULT_TEMPLATE: TemplateSettings = {
   showActiveCount: true,
   showRoleBreakdown: true,
-  showRoleBadge: true,
-  showStatusDot: false,
   enablePopup: true,
   iconStyle: 'photo',
   popupFields: {
@@ -307,9 +303,8 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
     if (isCurrentUser) wrap.classList.add('avatar-wrap-local');
 
     const inner = createElement('div', {
-      className: 'avatar-inner' + (this.template.showRoleBadge ? ' avatar-ring' : ''),
+      className: 'avatar-inner',
     }) as HTMLElement;
-    inner.style.setProperty('--role-color', color);
     if (isCurrentUser) inner.classList.add('avatar-inner-current');
 
     const useInitials = this.template.iconStyle === 'initials' || !profile.profileIcon;
@@ -326,14 +321,6 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
       inner.appendChild(img);
     } else {
       inner.appendChild(this.makeInitialsSpan(profile, color));
-    }
-
-    if (this.template.showStatusDot) {
-      const dot = createElement('span', {
-        className: 'avatar-status-dot online',
-        attrs: { title: 'Active Now' },
-      }) as HTMLElement;
-      inner.appendChild(dot);
     }
 
     wrap.appendChild(inner);
@@ -656,8 +643,7 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
         className: 'udp-role-chip',
         attrs: { style: `background:${ring}` },
       }) as HTMLElement;
-      // Mockup pattern: "<role> <initials>"
-      chip.textContent = `${profile.userRole || 'Viewer'} ${profile.initials || ''}`.trim();
+      chip.textContent = profile.userRole || 'Viewer';
       roleP.appendChild(chip);
       this.hoverPopup.appendChild(roleP);
     }
@@ -734,7 +720,7 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
     const titleGrp = createElement('div', { id: 'grpTitle' }) as HTMLElement;
     body.appendChild(titleGrp);
 
-    // ─── User icon section (iconStyle + showRoleBadge / showStatusDot / enablePopup) ──
+    // ─── User icon section (iconStyle + enablePopup) ──
     const iconSec = createElement('p', { className: 'template-section-title' }) as HTMLElement;
     iconSec.textContent = 'User icon';
     body.appendChild(iconSec);
@@ -786,8 +772,6 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
 
     // Icon toggles
     const iconToggles: Array<{ key: keyof TemplateSettings; label: string }> = [
-      { key: 'showRoleBadge', label: 'Color-coded role ring on icon' },
-      { key: 'showStatusDot', label: 'Show online status dot' },
       { key: 'enablePopup',   label: 'Enable hover pop-up' },
     ];
     iconToggles.forEach((t) => {
