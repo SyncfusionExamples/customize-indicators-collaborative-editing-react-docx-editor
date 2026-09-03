@@ -273,7 +273,10 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
     const gearBtn = createElement('button', {
       id: 'templateBtn',
       className: 'template-btn',
-      attrs: { title: 'Collaborator Display Settings' },
+      attrs: {
+        title: 'Collaborator Display Settings',
+        'aria-label': 'Collaborator Display Settings',
+      },
     }) as HTMLButtonElement;
     gearBtn.innerHTML = templateGearSVG();
     gearBtn.addEventListener('click', () => this.openTemplateDrawer());
