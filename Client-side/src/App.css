@@ -830,16 +830,26 @@
   width: 30px;
   height: 30px;
   border-radius: 4px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: #4b5563;
+  background: #2B3481;
+  border: 1px solid #2B3481;
+  color: #fff;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
 }
 
 .template-btn:hover {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
+  background: #3d4eaa;
+  border-color: #3d4eaa;
+  transform: translateY(-1px);
+}
+
+.template-btn:focus-visible {
+  outline: 2px solid #2B3481;
+  outline-offset: 1px;
+}
+
+.template-btn:active {
+  transform: translateY(0);
 }
 
 /* ── Hover-popup (avatar) ────────────────────────────────────── */

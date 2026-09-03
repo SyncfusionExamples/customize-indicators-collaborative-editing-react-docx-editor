@@ -147,7 +147,7 @@ export class TitleBar {
   }
 
   public updateDocumentTitle = (): void => {
-    if (this.documentTitle) this.documentTitle.textContent = 'Collaborative EditingCollaborative Editing in Syncfusion React DOCX Editor ';
+    if (this.documentTitle) this.documentTitle.textContent = 'Collaborative Editing in Syncfusion React DOCX Editor ';
   };
 
 public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
@@ -273,7 +273,7 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
     const gearBtn = createElement('button', {
       id: 'templateBtn',
       className: 'template-btn',
-      attrs: { title: 'Template customization' },
+      attrs: { title: 'Collaborator Display Settings' },
     }) as HTMLButtonElement;
     gearBtn.innerHTML = templateGearSVG();
     gearBtn.addEventListener('click', () => this.openTemplateDrawer());
@@ -696,7 +696,7 @@ public addUser(actionInfos: ActionInfo | ActionInfo[] | any | any[]): void {
     const header = createElement('div', { className: 'template-drawer-header' }) as HTMLElement;
     const titleBlock = createElement('div') as HTMLElement;
     const title = createElement('h3') as HTMLElement;
-    title.textContent = 'Template Customization';
+    title.textContent = 'Collaborator Display Settings';
     const sub = createElement('p', { className: 'template-drawer-sub' }) as HTMLElement;
     sub.textContent = 'Configure how collaborators appear.';
     titleBlock.appendChild(title);

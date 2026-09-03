@@ -26,7 +26,6 @@ import { TitleBar } from './title-bar.ts';
 import { dataService } from './data-service.ts';
 import type { UserProfile } from './user-types.ts';
 import { fetchUserDirectory, findProfileByName } from './user-service.ts';
-import { roleColor as computeRoleColor } from './user-types.ts';
 
 DocumentEditor.Inject(CollaborativeEditingHandler);
 
@@ -59,7 +58,7 @@ interface EditorState {
   userDirectory: UserProfile[];
   /** True while the user directory request is in flight. */
   userDirectoryLoading: boolean;
-  /** Profile selected from the directory, or `null` when a custom name is typed. */
+  /** Profile selected from the server-provided list; `null` until a listed user is matched. */
   selectedProfile: UserProfile | null;
   /** Whether the autocomplete dropdown is currently open. */
   showPicker: boolean;
@@ -92,30 +91,22 @@ class Editor extends React.Component<EditorProps, EditorState> {
     };
   }
 
-  private get currentUser(): string {
-    return this.state.userName?.trim() || 'Guest user';
-  }
-
   /**
    * Profile representing the current local user (the one whose avatar is shown
-   * in the title bar). Falls back to a synthetic profile when the user typed
-   * a custom name not present in the directory.
+   * in the title bar). Only users present in the server-provided list may
+   * join, so this is always a profile picked from the directory — there is no
+   * synthetic/typed-name fallback anymore. `null` until a listed user is
+   * picked in the username dialog.
    */
-  private get currentUserProfile(): UserProfile {
-    if (this.state.selectedProfile) return this.state.selectedProfile;
-    const name = this.currentUser;
-    return {
-      id: 'local',
-      name,
-      profileIcon: '',
-      onlineStatus: 'Online',
-      userRole: 'Viewer',
-    };
+  private get currentUserProfile(): UserProfile | null {
+    return this.state.selectedProfile;
   }
 
   private onUserNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    // When the user types a name not in the directory we mark it as a custom profile.
+    // Match the typed value against the server directory. No match means the
+    // name is not in the list — selectedProfile stays null and Join stays
+    // disabled, so unlisted users can never enter the session.
     const match = findProfileByName(this.state.userDirectory, name);
     this.setState({
       userName: name,
@@ -218,25 +209,27 @@ class Editor extends React.Component<EditorProps, EditorState> {
 
   private onOkClick = () => {
     const name = this.state.userName.trim();
-    if (!name) return;
+    // Only users present in the server-provided list may join. If the typed
+    // name does not match a directory entry exactly, refuse to join.
+    const profile = this.state.selectedProfile;
+    if (!name || !profile) return;
 
-    dataService.setAuthorName(name);
+    dataService.setAuthorName(profile.name);
     // The editor is already mounted under the dialog. Just hide the dialog.
     this.setState({ showDialog: false });
-    // Once the user has entered their name, push the picked profile through
-    // to the title bar so it shows *this* user's avatar (not "Guest user" / "GU").
-    if (this.titleBar && this.currentUserProfile) {
-      this.titleBar.setCurrentUserProfile(this.currentUserProfile);
+    // Once the user has picked a listed user, push the chosen profile through
+    // to the title bar so it shows *this* user's avatar.
+    if (this.titleBar && profile) {
+      this.titleBar.setCurrentUserProfile(profile);
     }
     // Connect to the hub now that we have a real identity. Doing this only
     // *after* the dialog ensures peers in other tabs receive the actual
-    // user record from users.json (avatar, initals, role) — not the
-    // synthetic "Guest user" placeholder broadcast by an empty name.
-    if (this.currentRoomName) {
+    // user record from users.json (avatar, initials, role).
+    if (this.currentRoomName && profile) {
       this.connectToRoom({
         roomName: this.currentRoomName,
-        currentUser: this.currentUser,
-        currentUserProfile: this.currentUserProfile,
+        currentUser: profile.name,
+        currentUserProfile: profile,
       });
     }
   };
@@ -246,7 +239,8 @@ class Editor extends React.Component<EditorProps, EditorState> {
   // it has been closed because the user has already joined the session.
   private onUsernameBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
-    if (this.state.userName.trim()) {
+    // Only join when the current input matches a listed user.
+    if (this.state.selectedProfile) {
       this.onOkClick();
     }
   };
@@ -263,15 +257,18 @@ class Editor extends React.Component<EditorProps, EditorState> {
     try {
       const users = await fetchUserDirectory(this.serviceUrl);
       this.setState((prev) => {
-        // Preserve any name the user might have typed before the list arrived.
-        // We do NOT pre-fill the input with the first directory user anymore —
-        // the user explicitly asked for a clean textbox-with-suggestions UX.
+        // Preserve any name the user might have typed before the list arrived
+        // — but keep it valid only if it matches a listed user; unlisted names
+        // are no longer allowed to join.
         const next: Partial<EditorState> = {
           userDirectory: users,
           userDirectoryLoading: false,
         };
         if (prev.userName) {
-          next.selectedProfile = findProfileByName(users, prev.userName);
+          const match = findProfileByName(users, prev.userName);
+          next.selectedProfile = match;
+          // If the previously typed name is unlisted, clear the invalid text.
+          if (!match) next.userName = '';
         }
         return next as Pick<EditorState, keyof EditorState>;
       });
@@ -280,8 +277,9 @@ class Editor extends React.Component<EditorProps, EditorState> {
       // already been constructed (it was given an empty list at first).
       this.titleBar?.setUserDirectory(users);
     } catch (err) {
-      // Non-fatal: the user can still type a custom name.
-      this.setState({ userDirectoryLoading: false });
+      // Directory failed to load — without the list we cannot grant access,
+      // so keep loading ended but leave the list empty (Join stays disabled).
+      this.setState({ userDirectoryLoading: false, selectedProfile: null });
     }
   };
 
@@ -296,7 +294,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
           this.connection
             .send('LeaveGroup', {
               roomName: this.currentRoomName,
-              currentUser: this.currentUser,
+              currentUser: this.currentUserProfile?.name ?? this.state.userName.trim(),
             })
             .finally(() => this.connection?.stop());
         } else {
@@ -357,9 +355,9 @@ class Editor extends React.Component<EditorProps, EditorState> {
       this.serviceUrl // pass so /UserPictures/X.png is resolved against the API host
     );
     // The title bar needs to look up profile details (icon, id, online status)
-    // for both the current user and remote users.
+    // for both the current user and remote users. At this point the user has
+    // not picked a name yet, so there is no current profile to push.
     this.titleBar.setUserDirectory(this.state.userDirectory);
-    this.titleBar.setCurrentUserProfile(this.currentUserProfile);
   }
 
   private leaveRoomAndRedirect(): void {
@@ -371,7 +369,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
       this.connection
         .send('LeaveGroup', {
           roomName: this.currentRoomName,
-          currentUser: this.currentUser,
+          currentUser: this.currentUserProfile?.name ?? '',
         })
         .then(goHome)
         .catch(goHome);
@@ -401,10 +399,10 @@ class Editor extends React.Component<EditorProps, EditorState> {
     });
 
     this.connection.onreconnected(() => {
-      if (this.connection && this.currentRoomName) {
+      if (this.connection && this.currentRoomName && this.currentUserProfile) {
         this.connection.send('JoinGroup', {
           roomName: this.currentRoomName,
-          currentUser: this.currentUser,
+          currentUser: this.currentUserProfile.name,
           userId: this.currentUserProfile.id,
           profileIcon: this.currentUserProfile.profileIcon,
           onlineStatus: this.currentUserProfile.onlineStatus,
@@ -496,9 +494,8 @@ class Editor extends React.Component<EditorProps, EditorState> {
     // (it overlays the editor rather than blocking it).
     this.setState({ documentLoaded: true });
     // Remember the room the user will join. Connecting to the signalR hub is
-    // deferred until the user picks/enters a real name and clicks Join — that
-    // way the hub never broadcasts the synthetic "Guest user" placeholder to
-    // other tabs in the same room, which was the root cause of the GU bug.
+    // deferred until the user picks a listed name and clicks Join — that way
+    // the hub only ever broadcasts real user records from users.json.
     this.currentRoomName = roomName;
 
     if (containerEl) hideSpinner(containerEl);
@@ -575,6 +572,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
       userDirectoryLoading,
       showPicker,
       highlightedIndex,
+      selectedProfile,
     } = this.state;
 
     const suggestions = this.getFilteredSuggestions();
@@ -599,7 +597,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
                   User name
                 </label>
                 <p className="user-picker-hint">
-                  Start typing to pick from the list, or type any name to join as a guest.
+                  Only users from the server list can join. Start typing to pick your name from the list.
                 </p>
 
                 {/* Autocomplete combobox */}
@@ -608,7 +606,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
                     id="userNameInput"
                     type="text"
                     className="e-input user-combobox-input"
-                    placeholder="Type a name…"
+                    placeholder="Pick a listed user…"
                     value={userName}
                     onChange={this.onUserNameChange}
                     onFocus={this.onUserNameFocus}
@@ -667,7 +665,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
                 <button
                   className="e-btn e-primary"
                   onClick={this.onOkClick}
-                  disabled={!userName.trim()}
+                  disabled={userDirectoryLoading || !selectedProfile}
                 >
                   Join session
                 </button>
@@ -710,7 +708,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
               contentChange={this.onContentChange}
               style={{ display: 'block' }}
               height={'900px'}
-              currentUser={this.currentUser}
+              currentUser={this.currentUserProfile?.name ?? 'Guest user'}
               serviceUrl={this.serviceUrl + 'api/documenteditor'}
               toolbarMode="Ribbon"
               ribbonLayout="Classic"
