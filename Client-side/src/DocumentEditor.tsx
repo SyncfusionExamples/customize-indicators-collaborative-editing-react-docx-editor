@@ -709,7 +709,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
               created={this.onCreated}
               contentChange={this.onContentChange}
               style={{ display: 'block' }}
-              height={'990px'}
+              height={'900px'}
               currentUser={this.currentUser}
               serviceUrl={this.serviceUrl + 'api/documenteditor'}
               toolbarMode="Ribbon"
