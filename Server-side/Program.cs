@@ -45,7 +45,11 @@ builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
     return new BackgroundTaskQueue(200);
 });
 builder.Services.AddHostedService<QueuedHostedService>();
-builder.Services.AddScoped<IAzureDocumentStorageService, AzureDocumentStorageService>();
+
+// User directory service: serves the static profile list from
+// wwwroot/Data/users.json and decorates each entry with the live online
+// status derived from the Redis presence data.
+builder.Services.AddSingleton<UserDirectoryService>();
 
 var app = builder.Build();
 

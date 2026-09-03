@@ -24,18 +24,11 @@ import { hideSpinner, showSpinner } from '@syncfusion/ej2-popups';
 
 import { TitleBar } from './title-bar.ts';
 import { dataService } from './data-service.ts';
+import type { UserProfile } from './user-types.ts';
+import { fetchUserDirectory, findProfileByName } from './user-service.ts';
+import { SERVICE_URL } from './config.ts';
 
 DocumentEditor.Inject(CollaborativeEditingHandler);
-
-const USERS = [
-  'Kathryn Fuller',
-  'Tamer Fuller',
-  'Martin Nancy',
-  'Davolio Leverling',
-  'Nancy Fuller',
-  'Fuller Margaret',
-  'Leverling Andrew',
-];
 
 export default function EditorPageWrapper() {
   const { fileName, roomId } = useParams<{ fileName: string; roomId: string }>();
@@ -57,13 +50,26 @@ interface EditorProps {
 }
 
 interface EditorState {
+  /** Username dialog visibility. Initially `true` (overlays the editor until the user joins). */
   showDialog: boolean;
+  /** True once the document has finished loading — used to gate the dialog. */
+  documentLoaded: boolean;
   userName: string;
-  isUserNameEntered: boolean;
+  /** User directory fetched from the server (`/api/Users`). */
+  userDirectory: UserProfile[];
+  /** True while the user directory request is in flight. */
+  userDirectoryLoading: boolean;
+  /** Profile selected from the server-provided list; `null` until a listed user is matched. */
+  selectedProfile: UserProfile | null;
+  /** Whether the autocomplete dropdown is currently open. */
+  showPicker: boolean;
+  /** Index of the highlighted suggestion in the dropdown (-1 = none). */
+  highlightedIndex: number;
 }
 
 class Editor extends React.Component<EditorProps, EditorState> {
-  public serviceUrl = 'http://localhost:5212/';
+  /** Backend base URL — change this in src/config.ts. */
+  public serviceUrl = SERVICE_URL;
 
   public container: DocumentEditorContainerComponent | null = null;
   public titleBar?: TitleBar;
@@ -74,38 +80,210 @@ class Editor extends React.Component<EditorProps, EditorState> {
 
   constructor(props: EditorProps) {
     super(props);
-    const randomName = USERS[Math.floor(Math.random() * USERS.length)];
 
     this.state = {
       showDialog: true,
-      userName: randomName,
-      isUserNameEntered: false,
+      documentLoaded: false,
+      userName: '',
+      userDirectory: [],
+      userDirectoryLoading: true,
+      selectedProfile: null,
+      showPicker: false,
+      highlightedIndex: -1,
     };
   }
 
-  private get currentUser(): string {
-    return this.state.userName?.trim() || 'Guest user';
+  /**
+   * Profile representing the current local user (the one whose avatar is shown
+   * in the title bar). Only users present in the server-provided list may
+   * join, so this is always a profile picked from the directory — there is no
+   * synthetic/typed-name fallback anymore. `null` until a listed user is
+   * picked in the username dialog.
+   */
+  private get currentUserProfile(): UserProfile | null {
+    return this.state.selectedProfile;
   }
 
   private onUserNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({ userName: e.target.value });
+    const name = e.target.value;
+    // Match the typed value against the server directory. No match means the
+    // name is not in the list — selectedProfile stays null and Join stays
+    // disabled, so unlisted users can never enter the session.
+    const match = findProfileByName(this.state.userDirectory, name);
+    this.setState({
+      userName: name,
+      selectedProfile: match,
+      showPicker: true,
+      highlightedIndex: match ? 0 : -1,
+    });
+  };
+
+  private onUserNameFocus = () => {
+    this.setState({ showPicker: true });
+  };
+
+  private onUserNameBlur = (_e: React.FocusEvent<HTMLInputElement>) => {
+    // Delay closing so a click on a suggestion still registers.
+    setTimeout(() => this.setState({ showPicker: false, highlightedIndex: -1 }), 120);
+  };
+
+  private onUserNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      // If the picker is open and an item is highlighted, select it. Otherwise just submit.
+      const suggestions = this.getFilteredSuggestions();
+      if (
+        this.state.showPicker &&
+        this.state.highlightedIndex >= 0 &&
+        this.state.highlightedIndex < suggestions.length
+      ) {
+        e.preventDefault();
+        this.pickSuggestion(suggestions[this.state.highlightedIndex]);
+        return;
+      }
+      this.onOkClick();
+      return;
+    }
+
+    if (!this.state.showPicker && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      this.setState({ showPicker: true });
+      return;
+    }
+
+    if (!this.state.showPicker) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const suggestions = this.getFilteredSuggestions();
+      if (suggestions.length === 0) return;
+      this.setState((prev) => ({
+        highlightedIndex:
+          prev.highlightedIndex < suggestions.length - 1
+            ? prev.highlightedIndex + 1
+            : 0,
+      }));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const suggestions = this.getFilteredSuggestions();
+      if (suggestions.length === 0) return;
+      this.setState((prev) => ({
+        highlightedIndex:
+          prev.highlightedIndex > 0
+            ? prev.highlightedIndex - 1
+            : suggestions.length - 1,
+      }));
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      this.setState({ showPicker: false, highlightedIndex: -1 });
+    }
+  };
+
+  /**
+   * Returns the directory entries whose name contains the typed value
+   * (case-insensitive). When the input is empty, the first few entries are
+   * shown as a hint, but only when the directory has finished loading.
+   */
+  private getFilteredSuggestions = (): UserProfile[] => {
+    const { userDirectory, userName, userDirectoryLoading } = this.state;
+    if (userDirectoryLoading) return [];
+    const needle = userName.trim().toLowerCase();
+    if (!needle) {
+      return userDirectory.slice(0, 8);
+    }
+    const matches = userDirectory.filter((u) =>
+      (u.name || '').toLowerCase().includes(needle)
+    );
+    return matches.slice(0, 8);
+  };
+
+  /**
+   * Called when a user clicks (or keyboard-selects) a suggestion in the
+   * autocomplete dropdown. Populates the text input and remembers the full
+   * profile so the title bar can render the avatar.
+   */
+  private pickSuggestion = (profile: UserProfile) => {
+    this.setState({
+      userName: profile.name,
+      selectedProfile: profile,
+      showPicker: false,
+      highlightedIndex: -1,
+    });
   };
 
   private onOkClick = () => {
     const name = this.state.userName.trim();
-    if (!name) return;
+    // Only users present in the server-provided list may join. If the typed
+    // name does not match a directory entry exactly, refuse to join.
+    const profile = this.state.selectedProfile;
+    if (!name || !profile) return;
 
-    dataService.setAuthorName(name);
-    this.setState({ showDialog: false, isUserNameEntered: true });
+    dataService.setAuthorName(profile.name);
+    // The editor is already mounted under the dialog. Just hide the dialog.
+    this.setState({ showDialog: false });
+    // Once the user has picked a listed user, push the chosen profile through
+    // to the title bar so it shows *this* user's avatar.
+    if (this.titleBar && profile) {
+      this.titleBar.setCurrentUserProfile(profile);
+    }
+    // Connect to the hub now that we have a real identity. Doing this only
+    // *after* the dialog ensures peers in other tabs receive the actual
+    // user record from users.json (avatar, initials, role).
+    if (this.currentRoomName && profile) {
+      this.connectToRoom({
+        roomName: this.currentRoomName,
+        currentUser: profile.name,
+        currentUserProfile: profile,
+      });
+    }
   };
 
-  private onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') this.onOkClick();
+  // Close the username dialog if the user clicks the semi-transparent
+  // backdrop (outside the dialog box). The dialog never reopens after
+  // it has been closed because the user has already joined the session.
+  private onUsernameBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return;
+    // Only join when the current input matches a listed user.
+    if (this.state.selectedProfile) {
+      this.onOkClick();
+    }
   };
 
   public componentDidMount(): void {
     window.onbeforeunload = () => 'Want to save your changes?';
+
+    // Load the user directory from the server so the username dialog can
+    // offer a "Pick from list" option.
+    this.loadUserDirectory();
   }
+
+  private loadUserDirectory = async (): Promise<void> => {
+    try {
+      const users = await fetchUserDirectory(this.serviceUrl);
+      this.setState((prev) => {
+        // Preserve any name the user might have typed before the list arrived
+        // — but keep it valid only if it matches a listed user; unlisted names
+        // are no longer allowed to join.
+        const next: Partial<EditorState> = {
+          userDirectory: users,
+          userDirectoryLoading: false,
+        };
+        if (prev.userName) {
+          const match = findProfileByName(users, prev.userName);
+          next.selectedProfile = match;
+          // If the previously typed name is unlisted, clear the invalid text.
+          if (!match) next.userName = '';
+        }
+        return next as Pick<EditorState, keyof EditorState>;
+      });
+      // Keep the title bar in sync with the freshly-fetched directory.
+      // This matters when the directory arrives after the title bar has
+      // already been constructed (it was given an empty list at first).
+      this.titleBar?.setUserDirectory(users);
+    } catch (err) {
+      // Directory failed to load — without the list we cannot grant access,
+      // so keep loading ended but leave the list empty (Join stays disabled).
+      this.setState({ userDirectoryLoading: false, selectedProfile: null });
+    }
+  };
 
   public componentWillUnmount(): void {
     this.titleBar?.destroy();
@@ -118,7 +296,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
           this.connection
             .send('LeaveGroup', {
               roomName: this.currentRoomName,
-              currentUser: this.currentUser,
+              currentUser: this.currentUserProfile?.name ?? this.state.userName.trim(),
             })
             .finally(() => this.connection?.stop());
         } else {
@@ -175,13 +353,17 @@ class Editor extends React.Component<EditorProps, EditorState> {
       this.container!.documentEditor,
       true,
       dataService,
-      () => this.leaveRoomAndRedirect()
+      () => this.leaveRoomAndRedirect(),
+      this.serviceUrl // pass so /UserPictures/X.png is resolved against the API host
     );
+    // The title bar needs to look up profile details (icon, id, online status)
+    // for both the current user and remote users. At this point the user has
+    // not picked a name yet, so there is no current profile to push.
+    this.titleBar.setUserDirectory(this.state.userDirectory);
   }
 
   private leaveRoomAndRedirect(): void {
     const goHome = () => {
-      dataService.setIsAuthorOpened(false);
       this.props.navigate('/');
     };
 
@@ -189,7 +371,7 @@ class Editor extends React.Component<EditorProps, EditorState> {
       this.connection
         .send('LeaveGroup', {
           roomName: this.currentRoomName,
-          currentUser: this.currentUser,
+          currentUser: this.currentUserProfile?.name ?? '',
         })
         .then(goHome)
         .catch(goHome);
@@ -219,10 +401,14 @@ class Editor extends React.Component<EditorProps, EditorState> {
     });
 
     this.connection.onreconnected(() => {
-      if (this.connection && this.currentRoomName) {
+      if (this.connection && this.currentRoomName && this.currentUserProfile) {
         this.connection.send('JoinGroup', {
           roomName: this.currentRoomName,
-          currentUser: this.currentUser,
+          currentUser: this.currentUserProfile.name,
+          userId: this.currentUserProfile.id,
+          profileIcon: this.currentUserProfile.profileIcon,
+          onlineStatus: this.currentUserProfile.onlineStatus,
+          userRole: this.currentUserProfile.userRole,
         });
       }
     });
@@ -238,10 +424,23 @@ class Editor extends React.Component<EditorProps, EditorState> {
       this.connectionId = data;
     }
 
+    // The hub wraps `addUser` payloads in `{ actionInfo, ...profileFields }`
+    // so peers can render the avatar without a separate round-trip to the
+    // user directory. Unwrap to the original ActionInfo for the collab
+    // handler, and pass the *wrapper* to the title bar so it can read the
+    // profile fields directly.
+    let collabAction: any = data;
+    const isWrappedUserPayload =
+      (action === 'addUser' || action === 'action') &&
+      data && typeof data === 'object' &&
+      'actionInfo' in data;
+    if (isWrappedUserPayload) collabAction = data.actionInfo;
+
     // Update TitleBar only for messages from other users
-    if (this.connectionId && this.connectionId !== data?.connectionId) {
+    if (this.connectionId && this.connectionId !== collabAction?.connectionId) {
       if (this.titleBar) {
         if (action === 'action' || action === 'addUser') {
+          // Hub sends a wrapper or an array of wrappers — pass it through.
           this.titleBar.addUser(data);
         } else if (action === 'removeUser') {
           this.titleBar.removeUser(data);
@@ -249,8 +448,8 @@ class Editor extends React.Component<EditorProps, EditorState> {
       }
     }
 
-    // Always forward ALL actions
-    handler.applyRemoteAction(action, data);
+    // Always forward ALL actions to the collaborative-editing handler.
+    handler.applyRemoteAction(action, collabAction);
 
   };
 
@@ -289,26 +488,25 @@ class Editor extends React.Component<EditorProps, EditorState> {
       throw new Error("collaborativeEditingHandlerModule is undefined");
     }
 
-    const collabBaseUrl = "http://localhost:5212/api/CollaborativeEditing/";
+    const collabBaseUrl = this.serviceUrl +'api/CollaborativeEditing/';
 
     handler.updateRoomInfo(roomName, version, collabBaseUrl);
     this.container?.documentEditor.open(sfdt);
-
-
-    // Connect SignalR + JoinGroup (CRITICAL for real-time collaboration)
-    setTimeout(() => {
-      this.connectToRoom({
-        roomName,
-        currentUser: this.currentUser,
-      });
-    }, 0);
+    // The document is now rendered, so the initial-name dialog can show
+    // (it overlays the editor rather than blocking it).
+    this.setState({ documentLoaded: true });
+    // Remember the room the user will join. Connecting to the signalR hub is
+    // deferred until the user picks a listed name and clicks Join — that way
+    // the hub only ever broadcasts real user records from users.json.
+    this.currentRoomName = roomName;
 
     if (containerEl) hideSpinner(containerEl);
   }
 
   public loadDocumentFromServer(): void {
+    const containerEl = document.getElementById('container') as HTMLElement | null;
+    if (containerEl) showSpinner(containerEl);
 
-    const docName = this.props.fileName || 'Giant Panda.docx';
     let { roomId } = this.props;
     let roomName = roomId;
     if (!roomName) {
@@ -325,118 +523,204 @@ class Editor extends React.Component<EditorProps, EditorState> {
 
       if (httpRequest.status === 200 || httpRequest.status === 304) {
         this.openDocument(httpRequest.responseText, roomName);
+        if (containerEl) hideSpinner(containerEl);
       } else {
-        alert(`ImportFile failed: ${httpRequest.status} ${httpRequest.statusText}`);
+        if (containerEl) hideSpinner(containerEl);
+        alert('Fail to load the document');
       }
     };
 
-    httpRequest.send(JSON.stringify({ fileName: docName, documentOwner: roomName }));
-
+    // Always load the default document shipped with the server (wwwroot/Giant Panda.docx).
+    httpRequest.send(JSON.stringify({ fileName: 'Giant Panda.docx', documentOwner: roomId }));
   }
 
-  public connectToRoom = async (data: { roomName: string; currentUser: string }) => {
+  public connectToRoom = async (data: {
+    roomName: string;
+    currentUser: string;
+    currentUserProfile: UserProfile;
+  }) => {
     try {
       this.currentRoomName = data.roomName;
       if (!this.connection) return;
 
       if (this.connection.state === HubConnectionState.Disconnected) {
         await this.connection.start();
-        
+
       }
 
       if (this.connection.state === HubConnectionState.Connected) {
         await this.connection.send('JoinGroup', {
           roomName: data.roomName,
           currentUser: data.currentUser,
+          // Send the profile so other peers can render the user's avatar.
+          userId: data.currentUserProfile.id,
+          profileIcon: data.currentUserProfile.profileIcon,
+          onlineStatus: data.currentUserProfile.onlineStatus,
+          userRole: data.currentUserProfile.userRole,
         });
-        
+
       }
     } catch (err) {
-      
+
       setTimeout(() => this.connectToRoom(data), 5000);
     }
   };
 
   render() {
-    const { showDialog, userName, isUserNameEntered } = this.state;
+    const {
+      showDialog,
+      documentLoaded,
+      userName,
+      userDirectoryLoading,
+      showPicker,
+      highlightedIndex,
+      selectedProfile,
+    } = this.state;
+
+    const suggestions = this.getFilteredSuggestions();
+    const showSuggestions =
+      showPicker && !userDirectoryLoading && suggestions.length > 0;
+
+    // The dialog only appears AFTER the document finishes loading, then
+    // overlays the editor so the user can see the rendered document
+    // behind the name-picker.
+    const dialogVisible = showDialog && documentLoaded;
 
     return (
       <div className="control-pane">
-        {/* Username Dialog */}
-        {showDialog && (
-          <div id="dialog-container">
+        {/* Username Dialog (renders on top of the editor once the document is loaded) */}
+        {dialogVisible && (
+          <div id="dialog-container" onClick={this.onUsernameBackdropClick}>
             <div className="username-dialog-box">
               <div className="username-dialog-title">Enter your name</div>
               <div className="username-dialog-body">
-                <input
-                  id="userNameInput"
-                  type="text"
-                  className="e-input"
-                  placeholder="Enter your name"
-                  value={userName}
-                  onChange={this.onUserNameChange}
-                  onKeyDown={this.onKeyDown}
-                  autoFocus
-                />
+                {/* Label */}
+                <label className="user-picker-label" htmlFor="userNameInput">
+                  User name
+                </label>
+                <p className="user-picker-hint">
+                  Search your name in the organization to join the session.
+                </p>
+
+                {/* Autocomplete combobox */}
+                <div className="user-combobox">
+                  <input
+                    id="userNameInput"
+                    type="text"
+                    className="e-input user-combobox-input"
+                    placeholder="Select a user or type a name…"
+                    value={userName}
+                    onChange={this.onUserNameChange}
+                    onFocus={this.onUserNameFocus}
+                    onBlur={this.onUserNameBlur}
+                    onKeyDown={this.onUserNameKeyDown}
+                    autoFocus
+                    autoComplete="off"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded={showSuggestions}
+                    aria-controls="user-combobox-listbox"
+                  />
+                  <span
+                    className={`user-combobox-caret ${showSuggestions ? 'open' : ''}`}
+                    aria-hidden="true"
+                  >
+                    ▾
+                  </span>
+
+                  {showSuggestions && (
+                    <ul
+                      id="user-combobox-listbox"
+                      className="user-combobox-list"
+                      role="listbox"
+                    >
+                      {suggestions.map((u, idx) => (
+                        <li
+                          key={u.id}
+                          id={`user-combobox-opt-${u.id}`}
+                          role="option"
+                          aria-selected={idx === highlightedIndex}
+                          className={
+                            'user-combobox-option' +
+                            (idx === highlightedIndex ? ' is-active' : '')
+                          }
+                          // Use mousedown so the click registers before the
+                          // input's blur handler closes the dropdown.
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            this.pickSuggestion(u);
+                          }}
+                          onMouseEnter={() =>
+                            this.setState({ highlightedIndex: idx })
+                          }
+                        >
+                          <span className="user-combobox-option-name">
+                            {u.name}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
               <div className="username-dialog-footer">
                 <button
                   className="e-btn e-primary"
                   onClick={this.onOkClick}
-                  disabled={!userName.trim()}
+                  disabled={userDirectoryLoading || !selectedProfile}
                 >
-                  OK
+                  Join session
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Editor */}
-        {isUserNameEntered && (
-          <div>
-            {/* Hidden div for Share URL dialog content (if your TitleBar uses it) */}
-            <div id="shareDialog" style={{ display: 'none' }}>
-              <div className="e-de-para-dlg-heading">
-                Share this URL with others for real-time editing
-              </div>
-              <div className="e-de-container-row" style={{ display: 'flex', marginTop: 8 }}>
-                <input
-                  type="text"
-                  id="share_url"
-                  className="e-input"
-                  readOnly
-                  style={{ flex: 1 }}
-                />
-              </div>
+        {/* Document Editor — always mounted, dialog overlays it once the doc is loaded */}
+        <div
+          className={
+            'document-editor-shell' + (dialogVisible ? ' is-behind-dialog' : '')
+          }
+        >
+          {/* Hidden div for Share URL dialog content (if your TitleBar uses it) */}
+          <div id="shareDialog" style={{ display: 'none' }}>
+            <div className="e-de-para-dlg-heading">
+              Share this URL with others for real-time editing
             </div>
-
-            <div id="documenteditor_titlebar" className="e-de-ctn-title"></div>
-
-            <div id="documenteditor_container_body">
-              <DocumentEditorContainerComponent
-                id="container"
-                ref={(scope: DocumentEditorContainerComponent | null) => {
-                  this.container = scope;
-                }}
-                created={this.onCreated}
-                contentChange={this.onContentChange}
-                style={{ display: 'block' }}
-                height={'calc(100vh - 51px)'}
-                currentUser={this.currentUser}
-                serviceUrl={this.serviceUrl + 'api/documenteditor'}
-
-                toolbarMode="Ribbon"
-                ribbonLayout="Classic"
-                enableToolbar={true}
-                locale="en-US"
-              >
-                <Inject services={[Ribbon]} />
-              </DocumentEditorContainerComponent>
-
+            <div className="e-de-container-row" style={{ display: 'flex', marginTop: 8 }}>
+              <input
+                type="text"
+                id="share_url"
+                className="e-input"
+                readOnly
+                style={{ flex: 1 }}
+              />
             </div>
           </div>
-        )}
+
+          <div id="documenteditor_titlebar" className="e-de-ctn-title"></div>
+
+          <div id="documenteditor_container_body">
+            <DocumentEditorContainerComponent
+              id="container"
+              ref={(scope: DocumentEditorContainerComponent | null) => {
+                this.container = scope;
+              }}
+              created={this.onCreated}
+              contentChange={this.onContentChange}
+              style={{ display: 'block' }}
+              height={'100%'}
+              currentUser={this.currentUserProfile?.name ?? 'Guest user'}
+              serviceUrl={this.serviceUrl + 'api/documenteditor'}
+              toolbarMode="Ribbon"
+              ribbonLayout="Classic"
+              enableToolbar={true}
+              locale="en-US"
+            >
+              <Inject services={[Ribbon]} />
+            </DocumentEditorContainerComponent>
+          </div>
+        </div>
       </div>
     );
   }

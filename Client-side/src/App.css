@@ -1,18 +1,15 @@
-@import '../node_modules/@syncfusion/ej2-base/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-buttons/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-inputs/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-popups/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-lists/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-navigations/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-splitbuttons/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-dropdowns/styles/material.css';
-@import "../node_modules/@syncfusion/ej2-react-documenteditor/styles/material.css";
-@import '../node_modules/@syncfusion/ej2-ribbon/styles/material.css';
-/* File Manager styles */
-@import '../node_modules/@syncfusion/ej2-icons/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-grids/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-layouts/styles/material.css';
-@import '../node_modules/@syncfusion/ej2-react-filemanager/styles/material.css';
+@import '../node_modules/@syncfusion/ej2-base/styles/tailwind3.css';
+@import '../node_modules/@syncfusion/ej2-buttons/styles/tailwind3.css';
+@import '../node_modules/@syncfusion/ej2-inputs/styles/tailwind3.css';
+@import '../node_modules/@syncfusion/ej2-popups/styles/tailwind3.css';
+@import '../node_modules/@syncfusion/ej2-lists/styles/tailwind3.css';
+@import '../node_modules/@syncfusion/ej2-navigations/styles/tailwind3.css';
+@import '../node_modules/@syncfusion/ej2-splitbuttons/styles/tailwind3.css';
+@import '../node_modules/@syncfusion/ej2-dropdowns/styles/tailwind3.css';
+@import "../node_modules/@syncfusion/ej2-react-documenteditor/styles/tailwind3.css";
+@import '../node_modules/@syncfusion/ej2-ribbon/styles/tailwind3.css';
+/* Icons (used by TitleBar back arrow, etc.) */
+@import '../node_modules/@syncfusion/ej2-icons/styles/tailwind3.css';
 
 .App {
   text-align: center;
@@ -60,8 +57,8 @@
   height: 36px;
   line-height: 26px;
   font-size: 12px;
-  padding-left: 15px;
-  padding-right: 10px;
+  padding-left: 0px;
+  padding-right: 35px;
   font-family: inherit;
 }
 
@@ -111,102 +108,6 @@
 
 .e-de-icon-Download:before {
   content: "\e728";
-}
-
-/* ── File Manager Page ──────────────────────────────────────────── */
-.file-manager-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.file-manager-header {
-  background: #2B3481;
-  color: #fff;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  flex-shrink: 0;
-}
-
-.file-manager-title {
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-}
-
-.fm-error-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-left: 5px solid #e65100;
-  border-radius: 6px;
-  margin: 20px 24px;
-  padding: 16px 20px;
-  color: #5d3a00;
-  font-size: 14px;
-}
-
-.fm-error-banner .fm-error-icon {
-  font-size: 24px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.fm-error-banner strong {
-  font-size: 15px;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.fm-error-banner p {
-  margin: 2px 0;
-}
-
-.fm-checking-banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  text-align: center;
-  color: #888;
-  margin-top: 60px;
-  font-size: 15px;
-  letter-spacing: 0.3px;
-}
-
-.fm-spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 3px solid #ccc;
-  border-top-color: #555;
-  border-radius: 50%;
-  animation: fm-spin 0.8s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes fm-spin {
-  to { transform: rotate(360deg); }
-}
-
-.fm-retry-btn {
-  background: none;
-  border: none;
-  color: #b45309;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  font-size: inherit;
-  text-decoration: underline;
-}
-
-.fm-retry-btn:hover {
-  color: #92400e;
 }
 
 /* ── Username Overlay / Dialog ──────────────────────────────────── */
@@ -301,8 +202,8 @@
   height: 36px;
   line-height: 26px;
   font-size: 12px;
-  padding-left: 15px;
-  padding-right: 10px;
+  padding-left: 0px;
+  padding-right: 35px;
   font-family: inherit;
 }
 
@@ -376,7 +277,10 @@
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
   width: 360px;
   max-width: 95vw;
-  overflow: hidden;
+  /* 'visible' (not 'hidden') so the autocomplete dropdown that opens below
+     the input is not clipped by the dialog's bounds. Rounded corners are
+     preserved on the title bar itself instead. */
+  overflow: visible;
 }
 
 .username-dialog-title {
@@ -385,6 +289,9 @@
   font-size: 16px;
   font-weight: 500;
   padding: 14px 20px;
+  /* Match the parent's rounded top corners (needed now that the box
+     no longer clips its children with overflow:hidden). */
+  border-radius: 4px 4px 0 0;
 }
 
 .username-dialog-body {
@@ -401,125 +308,895 @@
   text-align: right;
 }
 
-/* ── File Manager header — Angular parity ──────────────────────── */
-#file-manager-header {
-  background-color: #3f51b5;
-  color: #fff;
-  width: 100%;
-  font-size: 18px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ── User picker (server-driven) ─────────────────────────────────── */
+.user-picker-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2B3481;
+  margin: 0 0 4px 2px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
 }
 
-/* ── File Manager wrapper ───────────────────────────────────────── */
-.file-manager-wrapper {
+.user-picker {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px !important;
+  padding: 8px 10px !important;
+  border-radius: 4px !important;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.user-picker:disabled {
+  background-color: #f5f5f5;
+  cursor: progress;
+  opacity: 0.85;
+}
+
+.user-picker-divider {
+  display: flex;
+  align-items: center;
+  margin: 14px 0 10px;
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-picker-divider::before,
+.user-picker-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.user-picker-divider span {
+  padding: 0 10px;
+}
+
+/* ── Online / offline status dot (shared) ──────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+  background: #aaa;
+}
+
+.status-dot.status-online {
+  background: #2ecc71;
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.18);
+}
+
+.status-dot.status-offline {
+  background: #b0b0b0;
+}
+
+/* ── Title-bar user avatars (server-driven profiles) ───────────── */
+#de_userInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.collab-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #2B3481;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 4px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+  user-select: none;
+}
+
+.collab-avatar:hover {
+  transform: translateY(-1px);
+  border-color: rgba(43, 52, 129, 0.4);
+}
+
+.collab-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.collab-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  letter-spacing: 0.5px;
+}
+
+/* ── User details popup (no copyright assets) ─────────────────── */
+.udp-root {
+  padding: 4px 6px 2px;
+  font-family: "Roboto", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+.udp-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 12px;
+}
+
+.udp-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #2B3481;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 600;
+  flex-shrink: 0;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #e3e6f0;
+}
+
+.udp-avatar-fallback {
+  letter-spacing: 1px;
+}
+
+.udp-header-text {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  gap: 4px;
 }
 
-.file-manager-header {
-  background: #3f51b5;
+.udp-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udp-status {
+  font-size: 13px;
+  color: #555;
+  display: flex;
+  align-items: center;
+}
+
+.udp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 2px;
+  font-size: 13px;
+}
+
+.udp-row + .udp-row {
+  border-top: 1px dashed #f0f0f0;
+}
+
+.udp-label {
+  color: #888;
+  font-weight: 500;
+}
+
+.udp-value {
+  color: #1a1a2e;
+  font-weight: 500;
+  text-align: right;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udp-mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  color: #2B3481;
+}
+
+
+/* ── Autocomplete combobox (username login) ──────────────────────── */
+.user-picker-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.user-combobox {
+  position: relative;
+}
+
+.user-combobox-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px !important;
+  padding: 8px 28px 8px 10px !important;
+  border-radius: 4px !important;
+}
+
+.user-combobox-caret {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-size: 12px;
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+
+.user-combobox-caret.open {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.user-combobox-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d4d4e0;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  /* Keep the dropdown inside the viewport on short screens. It can extend
+     beyond the dialog box (which now uses overflow:visible) but never past
+     the bottom of the window. min() = never taller than the space left
+     under the input; 260px = the previous fixed cap. */
+  max-height: min(260px, 45vh);
+  overflow-y: auto;
+  z-index: 10000;
+}
+
+.user-combobox-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1a1a2e;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+.user-combobox-option:hover,
+.user-combobox-option.is-active {
+  background: #eef0fb;
+}
+
+.user-combobox-option-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Role chip (profile popup) ───────────────────────────────────── */
+.udp-role-chip {
+  display: inline-flex;
+  align-items: center;
   color: #fff;
-  height: 35px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.udp-role-chip-strong {
+  font-size: 11px;
+  padding: 3px 10px;
+}
+
+/* ── Avatar role dot (small tag on bottom-right of each avatar) ─── */
+.collab-avatar-img-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collab-avatar-img-wrap.collab-avatar-fallback {
+  background: #2B3481;
+  color: #fff;
+}
+
+.collab-avatar-initials {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.collab-avatar-role-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #6b7280;
+  pointer-events: none;
+}
+
+/* The click target itself shouldn't reveal that the dot is interactive */
+.collab-avatar .collab-avatar-role-dot {
+  pointer-events: none;
+}
+/*
+ * ─────────────────────────────────────────────────────────────────────
+ *  Collaborative title bar (mockup-driven)
+ *  Layout: avatar stack + active-count pill + role-breakdown pill +
+ *          share button + template gear
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/* Make sure the title bar is tall enough for the new 38–40 px avatar stack. */
+#documenteditor_titlebar {
+  min-height: 56px;
+  height: auto;
+  display: block;
+}
+
+#documenteditor_titlebar .collab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px 8px;
+  width: 100%;
+}
+
+.collab-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ── Avatar stack (overlapping circles) ─────────────────────── */
+.avatar-stack {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  flex: 0 0 auto;
+}
+
+.avatar-wrap {
+  position: relative;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.avatar-wrap:first-child {
+  margin-left: 0 !important;
+}
+
+.avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #6b7280;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border: 2px solid #fff;
+  transition: transform 0.12s ease;
+  position: relative;
+}
+
+.avatar-inner.avatar-inner-current {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(43, 52, 129, 0.18);
+}
+
+.avatar-wrap:hover .avatar-inner {
+  transform: translateY(-1px);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-initials {
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+/* ── Counts / pills / buttons ────────────────────────────────── */
+.counts-block {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+}
+
+.count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #eef2ff;
+  color: #2B3481;
+  border: 1px solid #d4dafa;
+  white-space: nowrap;
+}
+
+.count-pill.is-hidden {
+  display: none;
+}
+
+.count-pill-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.count-pill-active {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.count-pill-breakdown {
+  background: #f3f4f6;
+  color: #4b5563;
+  border-color: #e5e7eb;
+}
+
+.btn-share-primary,
+.btn-secondary,
+.btn-primary,
+.btn-text {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+/* Stand out on the dark indigo title bar: high-contrast white fill,
+   indigo text/icon, and a subtle ring so the affordance is obvious. */
+.btn-share-primary {
+  background: #fff;
+  color: #2B3481;
+  border-color: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+}
+
+.btn-share-primary:hover {
+  background: #eef2ff;
+  border-color: #eef2ff;
+  color: #1e1b4b;
+}
+
+.btn-share-primary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.btn-share-primary svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.template-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  /* Light outline style contrasts against the dark title bar. */
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+
+.template-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #fff;
+  transform: translateY(-1px);
+}
+
+.template-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.template-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Hover-popup (avatar) ────────────────────────────────────── */
+.user-popup {
+  position: fixed;
+  z-index: 9998;
+  width: 240px;
+  padding: 14px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  font-family: "Roboto", "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  color: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.user-popup.popup-hidden {
+  display: none !important;
+}
+
+.user-popup .udp-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--role-color, #6b7280);
+  align-self: center;
+  margin-bottom: 6px;
+}
+
+.user-popup .udp-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--role-color, #6b7280);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.user-popup .udp-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.user-popup .udp-row-line {
+  margin: 4px 0 6px;
+  text-align: center;
+}
+
+.user-popup .udp-role-chip {
+  display: inline-block;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.user-popup .udp-status {
+  margin: 2px 0 4px;
+  font-size: 13px;
+  text-align: center;
+  color: #4b5563;
+}
+
+.user-popup .udp-status-active {
+  color: #047857;
+}
+
+.user-popup .udp-meta {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* ── Share modal (mockup-driven, replaces legacy Share URL dialog) ── */
+.share-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  font-size: 18px;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
 }
 
-.file-manager-title {
-  font-size: 18px;
-  font-weight: 400;
+.share-modal.popup-hidden {
+  display: none;
 }
 
-/* ── Error / checking banners ───────────────────────────────────── */
-.fm-error-banner {
+.share-modal-card {
+  position: relative;
+  width: 460px;
+  max-width: 95vw;
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.25);
+  font-family: "Roboto", "Segoe UI", system-ui, sans-serif;
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-left: 5px solid #e65100;
-  border-radius: 6px;
-  margin: 20px 24px;
-  padding: 16px 20px;
-  color: #5d3a00;
-  font-size: 14px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.fm-error-banner .fm-error-icon {
+/* Close button — pinned to the top-right corner of the share-modal-card */
+.share-close-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 24px;
-  flex-shrink: 0;
-  margin-top: 2px;
+  line-height: 1;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
-.fm-error-banner strong {
-  font-size: 15px;
+.share-close-x:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.share-close-x:focus-visible {
+  outline: 2px solid #2B3481;
+  outline-offset: 1px;
+}
+
+.share-modal-card h3 {
+  margin: 0;
+  padding-right: 36px; /* leave room for the close button in the corner */
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.share-modal-sub {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.share-modal-label {
   display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
   margin-bottom: 4px;
 }
 
-.fm-error-banner p {
-  margin: 2px 0;
+.share-modal-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #f9fafb;
+  color: #1f2937;
 }
 
-.fm-checking-banner {
+.share-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #1f2937;
+  border-color: #e5e7eb;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.btn-primary {
+  background: #2B3481;
+  color: #fff;
+  border-color: #2B3481;
+}
+
+.btn-primary:hover {
+  background: #3d4eaa;
+  border-color: #3d4eaa;
+}
+
+.btn-text {
+  background: transparent;
+  color: #6b7280;
+  border: none;
+  margin-left: auto;
+}
+
+.btn-text:hover {
+  color: #1f2937;
+}
+
+.share-modal-hint {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ── Template drawer (right-side slide-in panel) ─────────────── */
+.template-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 340px;
+  max-width: 100%;
+  background: #fff;
+  box-shadow: -10px 0 30px rgba(15, 23, 42, 0.16);
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+  font-family: "Roboto", "Segoe UI", system-ui, sans-serif;
+}
+
+.template-drawer.popup-hidden {
+  transform: translateX(110%);
+}
+
+.template-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 22px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.template-drawer-header h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: #1a1a2e;
+}
+
+.template-drawer-sub {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.template-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.template-close-btn:hover {
+  color: #1a1a2e;
+}
+
+.template-drawer-body {
+  padding: 18px 22px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.template-section-title {
+  margin: 12px 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.template-section-title:not(:first-child) {
+  margin-top: 20px;
+}
+
+.template-row-label {
+  display: block;
+  font-size: 12px;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+.template-select {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.template-toggle-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  text-align: center;
-  color: #888;
-  margin-top: 60px;
-  font-size: 15px;
-}
-
-.fm-spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 3px solid #ccc;
-  border-top-color: #555;
-  border-radius: 50%;
-  animation: fm-spin 0.8s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes fm-spin {
-  to { transform: rotate(360deg); }
-}
-
-.fm-retry-btn {
-  background: none;
-  border: none;
-  color: #b45309;
-  font-weight: 600;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #1f2937;
   cursor: pointer;
-  padding: 0;
-  font-size: inherit;
-  text-decoration: underline;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.fm-retry-btn:hover {
-  color: #92400e;
+.template-toggle-row:last-child {
+  border-bottom: none;
 }
 
-/* ── single-line title editing ──────────────────────────────────── */
-.single-line {
-  cursor: text !important;
-  outline: none;
-}
-
-.single-line:hover {
-  border-color: #e4e4e4 !important;
-}
-
-[contenteditable="true"].single-line {
-  white-space: nowrap;
-  border-color: #e4e4e4 !important;
+.template-toggle-row .template-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #2B3481;
 }

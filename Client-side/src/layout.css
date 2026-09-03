@@ -1,0 +1,43 @@
+/* Layout: make the app fill the viewport exactly so the page never scrolls.
+   The editor shell is a flex column (title bar + editor body), and the editor
+   stretches to the remaining height. */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.control-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.document-editor-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0; /* allow children to shrink within the flex column */
+  overflow: hidden;
+}
+
+/* Title bar keeps its fixed row height inside the flex column. */
+#documenteditor_titlebar {
+  flex: 0 0 auto;
+}
+
+/* Editor body takes the remaining viewport height. */
+#documenteditor_container_body {
+  flex: 1 1 auto;
+  min-height: 0; /* critical: lets the flex child shrink instead of overflowing */
+}
+
+/* The Syncfusion container component should stretch to its parent's size. */
+#documenteditor_container_body .e-de-container,
+#documenteditor_container_body .e-de-container-wrap,
+#documenteditor_container_body > div {
+  height: 100%;
+}

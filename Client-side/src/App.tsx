@@ -1,23 +1,16 @@
 import './App.css';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import FileManagerPage from './FileManagerPage';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import EditorPageWrapper from './DocumentEditor';
 
 function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* File picker – landing page */}
-                <Route path="/" element={<FileManagerPage />} />
+                {/* Default entry — opens the collaborative editor with the default document. */}
+                <Route path="/" element={<EditorPageWrapper />} />
 
-                {/* Collaborative editor – opened from File Manager */}
-                <Route path="/editor/:fileName/:roomId" element={<EditorPageWrapper />} />
-
-                {/* Shared-link flow: /editor (no file/room) – falls back to ?id= query param */}
+                {/* Allow direct access via /editor as well (e.g. shared link). */}
                 <Route path="/editor" element={<EditorPageWrapper />} />
-
-                {/* Catch-all */}
-                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>
     );

@@ -61,7 +61,7 @@ namespace CollaborativeEditingServerSide.Service
         public async Task ApplyOperationsToSourceDocument(List<ActionInfo> actions)
         {
             // Load the document
-            Syncfusion.EJ2.DocumentEditor.WordDocument document = await CollaborativeEditingController.GetSourceDocumentFromAzureAsync("Giant Panda.docx");
+            Syncfusion.EJ2.DocumentEditor.WordDocument document = await CollaborativeEditingController.GetSourceDocumentAsync("Giant Panda.docx");
             CollaborativeEditingHandler? handler = new CollaborativeEditingHandler(document);
 
             // Process previous items
