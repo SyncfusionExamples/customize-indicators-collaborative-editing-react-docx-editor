@@ -746,32 +746,6 @@
   letter-spacing: 0.5px;
 }
 
-/* Role-colored ring. The exact ring color is set via inline style="--role-color:...". */
-.avatar-ring {
-  box-shadow: 0 0 0 2px var(--role-color, #6b7280);
-}
-
-.avatar-ring-offline {
-  filter: grayscale(0.6);
-  opacity: 0.85;
-}
-
-.avatar-status-dot {
-  position: absolute;
-  top: 1px;
-  right: 1px;
-  width: 8px;
-  height: 8px;
-  background: #22c55e;
-  border: 1.5px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
-.avatar-status-dot.offline {
-  background: #9ca3af;
-}
-
 /* ── Counts / pills / buttons ────────────────────────────────── */
 .counts-block {
   display: flex;
